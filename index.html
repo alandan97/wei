@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>围棋大师 - AI教学对弈平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #e94560;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #e94560, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        /* 主布局 */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        /* 左侧：教学面板 */
+        .teaching-panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .teaching-panel h3 {
+            color: #e94560;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .progress-bar {
+            background: rgba(255,255,255,0.1);
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #e94560, #ff6b6b);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .teaching-point {
+            background: rgba(233, 69, 96, 0.1);
+            border-left: 3px solid #e94560;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .teaching-point:hover {
+            background: rgba(233, 69, 96, 0.2);
+            transform: translateX(5px);
+        }
+
+        .teaching-point.active {
+            background: rgba(233, 69, 96, 0.3);
+        }
+
+        .point-number {
+            display: inline-block;
+            background: #e94560;
+            color: #fff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-size: 0.8rem;
+            margin-right: 8px;
+        }
+
+        .point-title {
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .point-status {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        /* 中间：棋盘区域 */
+        .board-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 胜率显示 */
+        .win-rate-panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 15px 25px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .rate-item {
+            text-align: center;
+        }
+
+        .rate-label {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .rate-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .rate-black { color: #333; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .rate-white { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+
+        .rate-bar {
+            width: 200px;
+            height: 10px;
+            background: #fff;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .rate-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #333 0%, #333 50%, #fff 50%, #fff 100%);
+            transition: all 0.5s;
+        }
+
+        /* 提示框 */
+        .hint-box {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.2));
+            border: 1px solid #e94560;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            max-width: 600px;
+        }
+
+        .hint-title {
+            color: #e94560;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hint-content {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #ddd;
+        }
+
+        .hint-suggestion {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .hint-suggestion::before {
+            content: "💡 建议：";
+            color: #ffd700;
+        }
+
+        /* 棋盘 */
+        .board-container {
+            position: relative;
+            background: #dcb35c;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(19, 30px);
+            grid-template-rows: repeat(19, 30px);
+            gap: 0;
+            background: #dcb35c;
+        }
+
+        .intersection {
+            width: 30px;
+            height: 30px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .intersection::before,
+        .intersection::after {
+            content: '';
+            position: absolute;
+            background: #333;
+        }
+
+        .intersection::before {
+            width: 1px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .intersection::after {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .stone {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .stone.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
+        }
+
+        .stone.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+        }
+
+        .stone.hint {
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 15px #e94560;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        /* 星位 */
+        .star-point::before {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #333;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+
+        /* 右侧：控制面板 */
+        .control-panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-panel h3 {
+            color: #e94560;
+            margin-bottom: 15px;
+        }
+
+        .game-info {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .info-label {
+            color: #888;
+        }
+
+        .info-value {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 设置面板 */
+        .settings {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+        }
+
+        .setting-label {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .setting-select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 5px;
+            color: #fff;
+        }
+
+        /* 教学模式弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #1a1a2e;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid #e94560;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: #e94560;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .teaching-content {
+            line-height: 1.8;
+        }
+
+        .teaching-content h4 {
+            color: #e94560;
+            margin: 15px 0 10px;
+        }
+
+        .teaching-content p {
+            color: #ddd;
+            margin-bottom: 10px;
+        }
+
+        .example-board {
+            background: #dcb35c;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: inline-block;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .teaching-panel,
+            .control-panel {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+        }
+
+        /* 最后落子标记 */
+        .last-move::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #e94560;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 15;
+        }
+
+        /* 领地标记 */
+        .territory-black {
+            background: rgba(0,0,0,0.3) !important;
+        }
+
+        .territory-white {
+            background: rgba(255,255,255,0.3) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🏆 围棋大师 - AI教学对弈平台</h1>
+            <p>从入门到职业，100个教学点带你成为围棋高手</p>
+        </div>
+
+        <!-- 主布局 -->
+        <div class="main-layout">
+            <!-- 左侧：教学面板 -->
+            <div class="teaching-panel">
+                <h3>📚 教学模式</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p style="font-size: 0.85rem; color: #888; margin-bottom: 15px;">
+                    当前进度：<span id="currentProgress">0</span>/100 教学点
+                </p>
+
+                <div class="teaching-point active" onclick="loadTeachingPoint(1)">
+                    <span class="point-number">1</span>
+                    <span class="point-title">认识棋盘与棋子</span>
+                    <div class="point-status">正在学习</div>
+                </div>
+
+                <div class="teaching-point" onclick="loadTeachingPoint(2)">
+                    <span class="point-number">2</span>
+                    <span class="point-title">气的概念</span>
+                    <div class="point-status">未解锁</div>
+                </div>
+
+                <div class="teaching-point" onclick="loadTeachingPoint(3)">
+                    <span class="point-number">3</span>
+                    <span class="point-title">提子规则</span>
+                    <div class="point-status">未解锁</div>
+                </div>
+
+                <div class="teaching-point" onclick="loadTeachingPoint(4)">
+                    <span class="point-number">4</span>
+                    <span class="point-title">打吃与吃子</span>
+                    <div class="point-status">未解锁</div>
+                </div>
+
+                <div class="teaching-point" onclick="loadTeachingPoint(5)">
+                    <span class="point-number">5</span>
+                    <span class="point-title">连接与切断</span>
+                    <div class="point-status">未解锁</div>
+                </div>
+
+                <button class="btn btn-secondary" onclick="showTeachingModal()" style="margin-top: 15px;">
+                    查看完整教学大纲
+                </button>
+            </div>
+
+            <!-- 中间：棋盘区域 -->
+            <div class="board-section">
+                <!-- 胜率显示 -->
+                <div class="win-rate-panel">
+                    <div class="rate-item">
+                        <div class="rate-label">黑棋胜率</div>
+                        <div class="rate-value rate-black" id="blackRate">50%</div>
+                    </div>
+                    <div class="rate-bar">
+                        <div class="rate-fill" id="rateFill"></div>
+                    </div>
+                    <div class="rate-item">
+                        <div class="rate-label">白棋胜率</div>
+                        <div class="rate-value rate-white" id="whiteRate">50%</div>
+                    </div>
+                </div>
+
+                <!-- AI提示框 -->
+                <div class="hint-box" id="hintBox">
+                    <div class="hint-title">
+                        <span>🤖</span>
+                        <span>AI 教学提示</span>
+                    </div>
+                    <div class="hint-content" id="hintContent">
+                        欢迎来到围棋大师！这是你的第一堂课。请先在棋盘上放置一颗黑子，熟悉一下落子的感觉。
+                    </div>
+                    <div class="hint-suggestion" id="hintSuggestion">
+                        尝试在棋盘中心（天元）或四个星位落子，这些都是开局的好位置。
+                    </div>
+                </div>
+
+                <!-- 棋盘 -->
+                <div class="board-container">
+                    <div id="board"></div>
+                </div>
+            </div>
+
+            <!-- 右侧：控制面板 -->
+            <div class="control-panel">
+                <h3>🎮 游戏控制</h3>
+                
+                <div class="game-info">
+                    <div class="info-row">
+                        <span class="info-label">当前手数</span>
+                        <span class="info-value" id="moveCount">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">当前回合</span>
+                        <span class="info-value" id="currentTurn">黑棋</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">提子数（黑）</span>
+                        <span class="info-value" id="capturedBlack">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">提子数（白）</span>
+                        <span class="info-value" id="capturedWhite">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">黑棋领地</span>
+                        <span class="info-value" id="territoryBlack">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">白棋领地</span>
+                        <span class="info-value" id="territoryWhite">0</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="requestHint()">
+                    💡 获取提示
+                </button>
+                <button class="btn btn-secondary" onclick="undoMove()">
+                    ↩️ 悔棋
+                </button>
+                <button class="btn btn-secondary" onclick="passMove()">
+                    ⏭️ 停一手
+                </button>
+                <button class="btn btn-secondary" onclick="calculateScore()">
+                    📊 计算胜负
+                </button>
+                <button class="btn btn-secondary" onclick="resetGame()">
+                    🔄 重新开始
+                </button>
+
+                <div class="settings">
+                    <h3 style="font-size: 1rem; margin-bottom: 15px;">⚙️ 游戏设置</h3>
+                    
+                    <div class="setting-item">
+                        <label class="setting-label">游戏模式</label>
+                        <select class="setting-select" id="gameMode" onchange="changeGameMode()">
+                            <option value="teaching">教学模式</option>
+                            <option value="ai">人机对弈</option>
+                            <option value="local">本地对弈</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="setting-label">AI难度</label>
+                        <select class="setting-select" id="aiLevel">
+                            <option value="beginner">入门</option>
+                            <option value="intermediate">中级</option>
+                            <option value="advanced">高级</option>
+                            <option value="master">大师</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="setting-label">提示频率</label>
+                        <select class="setting-select" id="hintFrequency">
+                            <option value="always">总是显示</option>
+                            <option value="sometimes">偶尔显示</option>
+                            <option value="rarely">很少显示</option>
+                            <option value="never">不显示</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 教学模式弹窗 -->
+    <div class="modal-overlay" id="teachingModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">📚 围棋教学大纲（100个教学点）</h3>
+                <button class="modal-close" onclick="closeTeachingModal()">&times;</button>
+            </div>
+            <div class="teaching-content">
+                <h4>第一阶段：入门篇（1-25点）</h4>
+                <p>第1-5点：认识围棋 - 围棋起源、棋盘棋子、基本规则、气的概念、提子规则</p>
+                <p>第6-10点：吃子技巧 - 打吃、双打吃、门吃、抱吃、征子</p>
+                <p>第11-15点：连接与切断 - 连接的重要性、双连接、切断概念、分断技巧、平衡</p>
+                <p>第16-20点：死活基础 - 真眼假眼、做眼技巧、破眼方法、活形死形、双活</p>
+                <p>第21-25点：基础对杀 - 对杀概念、气的计算、对杀技巧、有眼杀无眼、综合测试</p>
+
+                <h4>第二阶段：进阶篇（26-50点）</h4>
+                <p>第26-30点：布局基础 - 角边腹价值、占角方法、守角挂角、拆边、布局三原则</p>
+                <p>第31-35点：定式入门 - 什么是定式、星位定式、小目定式、三三定式、定式选择</p>
+                <p>第36-40点：中盘战斗 - 打入侵消、攻击方法、防守技巧、腾挪技巧、战斗判断</p>
+                <p>第41-45点：手筋初探 - 什么是手筋、挖、夹、扑、综合运用</p>
+                <p>第46-50点：官子基础 - 官子概念、官子大小、一路官子、二路官子、综合测试</p>
+
+                <h4>第三阶段：提高篇（51-75点）</h4>
+                <p>第51-55点：全局观念 - 形势判断、大场急所、厚薄强弱、棋子效率、全局平衡</p>
+                <p>第56-60点：定式深入 - 定式变化、定式场合、新型AI定式、定式后作战、打破定式</p>
+                <p>第61-65点：高级手筋 - 倒扑、金鸡独立、老鼠偷油、倒脱靴、手筋创造</p>
+                <p>第66-70点：死活进阶 - 角部死活、边部死活、缩小眼位、扩大眼位、经典死活题</p>
+                <p>第71-75点：官子提高 - 官子计算进阶、逆收官子、劫材劫争、收官顺序、综合测试</p>
+
+                <h4>第四阶段：大师篇（76-100点）</h4>
+                <p>第76-80点：AI思维 - AI时代围棋、AI推荐布局、AI定式库、AI中盘思路、AI官子计算</p>
+                <p>第81-85点：职业技巧 - 职业布局构思、中盘算路、胜负感、心理素质、名局欣赏①</p>
+                <p>第86-90点：名局学习 - 日本名局、韩国名局、中国名局、AI名局、打谱方法</p>
+                <p>第91-95点：专项训练 - 布局专项、中盘专项、手筋专项、死活专项、官子专项</p>
+                <p>第96-100点：大师之路 - 围棋哲学、AI时代、围棋教育、围棋人生、终极测试</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            board: Array(19).fill(null).map(() => Array(19).fill(null)),
+            currentPlayer: 'black',
+            moveCount: 0,
+            capturedBlack: 0,
+            capturedWhite: 0,
+            lastMove: null,
+            gameHistory: [],
+            currentTeachingPoint: 1,
+            completedPoints: [],
+            winRate: { black: 50, white: 50 }
+        };
+
+        // 教学点数据
+        const teachingPoints = {
+            1: {
+                title: "认识棋盘与棋子",
+                content: "围棋棋盘是19×19的方格，共有361个交叉点。棋子分黑白两色，黑棋先行。",
+                suggestion: "尝试在棋盘中心（天元）或四个星位落子，这些都是开局的好位置。",
+                hintPositions: [{x: 9, y: 9}, {x: 3, y: 3}, {x: 3, y: 15}, {x: 15, y: 3}, {x: 15, y: 15}]
+            },
+            2: {
+                title: "气的概念",
+                content: "棋子放在棋盘上，与它直线相连的空点称为'气'。棋子必须有气才能生存。",
+                suggestion: "放置一颗棋子，然后数一下它有几口气。角上棋子有2口气，边上3口，中间4口。",
+                hintPositions: []
+            },
+            3: {
+                title: "提子规则",
+                content: "当一颗棋子或一组棋子的所有气都被对方占据时，就被提掉（吃掉）。",
+                suggestion: "尝试制造一个可以提子的局面，把对方的棋子围到没有气。",
+                hintPositions: []
+            },
+            4: {
+                title: "打吃与吃子",
+                content: "打吃是指让对方棋子只剩一口气。连续打吃可以吃掉对方的棋子。",
+                suggestion: "寻找对方只有两口气的棋子，打吃它，迫使对方逃跑或被你吃掉。",
+                hintPositions: []
+            },
+            5: {
+                title: "连接与切断",
+                content: "连接可以让棋子更安全，切断可以攻击对方。这是围棋的基本战术。",
+                suggestion: "观察棋盘，看看哪里可以连接自己的棋子，或者切断对方的连接。",
+                hintPositions: []
+            }
+        };
+
+        // 初始化棋盘
+        function initBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            
+            for (let y = 0; y < 19; y++) {
+                for (let x = 0; x < 19; x++) {
+                    const intersection = document.createElement('div');
+                    intersection.className = 'intersection';
+                    intersection.dataset.x = x;
+                    intersection.dataset.y = y;
+                    
+                    // 标记星位
+                    if ((x === 3 || x === 9 || x === 15) && (y === 3 || y === 9 || y === 15)) {
+                        intersection.classList.add('star-point');
+                    }
+                    
+                    intersection.addEventListener('click', () => handleMove(x, y));
+                    board.appendChild(intersection);
+                }
+            }
+        }
+
+        // 处理落子
+        function handleMove(x, y) {
+            if (gameState.board[y][x] !== null) return;
+            
+            // 放置棋子
+            gameState.board[y][x] = gameState.currentPlayer;
+            
+            // 记录历史
+            gameState.gameHistory.push({
+                x, y,
+                player: gameState.currentPlayer,
+                board: JSON.parse(JSON.stringify(gameState.board))
+            });
+            
+            // 更新最后落子标记
+            gameState.lastMove = { x, y };
+            
+            // 检查提子
+            const captured = checkCapture(x, y);
+            if (gameState.currentPlayer === 'black') {
+                gameState.capturedWhite += captured;
+            } else {
+                gameState.capturedBlack += captured;
+            }
+            
+            // 更新手数和回合
+            gameState.moveCount++;
+            gameState.currentPlayer = gameState.currentPlayer === 'black' ? 'white' : 'black';
+            
+            // 更新显示
+            renderBoard();
+            updateGameInfo();
+            calculateWinRate();
+            
+            // 更新教学进度
+            updateTeachingProgress();
+            
+            // AI提示
+            if (gameState.currentTeachingPoint <= 5) {
+                setTimeout(() => provideTeachingHint(), 500);
+            }
+        }
+
+        // 检查提子
+        function checkCapture(x, y) {
+            const opponent = gameState.board[y][x] === 'black' ? 'white' : 'black';
+            let captured = 0;
+            const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+            
+            for (const [dx, dy] of directions) {
+                const nx = x + dx;
+                const ny = y + dy;
+                
+                if (nx >= 0 && nx < 19 && ny >= 0 && ny < 19 && gameState.board[ny][nx] === opponent) {
+                    const group = getGroup(nx, ny);
+                    if (countLiberties(group) === 0) {
+                        captured += group.length;
+                        for (const [gx, gy] of group) {
+                            gameState.board[gy][gx] = null;
+                        }
+                    }
+                }
+            }
+            
+            return captured;
+        }
+
+        // 获取棋子组
+        function getGroup(x, y) {
+            const color = gameState.board[y][x];
+            const group = [];
+            const visited = Array(19).fill(null).map(() => Array(19).fill(false));
+            const queue = [[x, y]];
+            
+            while (queue.length > 0) {
+                const [cx, cy] = queue.shift();
+                if (visited[cy][cx]) continue;
+                visited[cy][cx] = true;
+                group.push([cx, cy]);
+                
+                const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+                for (const [dx, dy] of directions) {
+                    const nx = cx + dx;
+                    const ny = cy + dy;
+                    if (nx >= 0 && nx < 19 && ny >= 0 && ny < 19 && 
+                        !visited[ny][nx] && gameState.board[ny][nx] === color) {
+                        queue.push([nx, ny]);
+                    }
+                }
+            }
+            
+            return group;
+        }
+
+        // 计算气数
+        function countLiberties(group) {
+            const liberties = new Set();
+            const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+            
+            for (const [x, y] of group) {
+                for (const [dx, dy] of directions) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < 19 && ny >= 0 && ny < 19 && gameState.board[ny][nx] === null) {
+                        liberties.add(`${nx},${ny}`);
+                    }
+                }
+            }
+            
+            return liberties.size;
+        }
+
+        // 渲染棋盘
+        function renderBoard() {
+            const intersections = document.querySelectorAll('.intersection');
+            intersections.forEach((intersection, index) => {
+                const x = index % 19;
+                const y = Math.floor(index / 19);
+                
+                // 清除之前的棋子
+                const existingStone = intersection.querySelector('.stone');
+                if (existingStone) {
+                    existingStone.remove();
+                }
+                
+                // 清除最后落子标记
+                intersection.classList.remove('last-move');
+                
+                // 放置新棋子
+                if (gameState.board[y][x]) {
+                    const stone = document.createElement('div');
+                    stone.className = `stone ${gameState.board[y][x]}`;
+                    intersection.appendChild(stone);
+                }
+                
+                // 标记最后落子
+                if (gameState.lastMove && gameState.lastMove.x === x && gameState.lastMove.y === y) {
+                    intersection.classList.add('last-move');
+                }
+            });
+        }
+
+        // 更新游戏信息
+        function updateGameInfo() {
+            document.getElementById('moveCount').textContent = gameState.moveCount;
+            document.getElementById('currentTurn').textContent = 
+                gameState.currentPlayer === 'black' ? '黑棋' : '白棋';
+            document.getElementById('capturedBlack').textContent = gameState.capturedBlack;
+            document.getElementById('capturedWhite').textContent = gameState.capturedWhite;
+        }
+
+        // 计算胜率
+        function calculateWinRate() {
+            // 简化的胜率计算（基于领地、提子、棋子数）
+            const { territoryBlack, territoryWhite } = calculateTerritory();
+            const blackScore = territoryBlack + gameState.capturedWhite;
+            const whiteScore = territoryWhite + gameState.capturedBlack + 6.5; // 贴目
+            
+            const total = blackScore + whiteScore;
+            const blackRate = total > 0 ? (blackScore / total * 100) : 50;
+            const whiteRate = 100 - blackRate;
+            
+            gameState.winRate.black = blackRate.toFixed(1);
+            gameState.winRate.white = whiteRate.toFixed(1);
+            
+            document.getElementById('blackRate').textContent = gameState.winRate.black + '%';
+            document.getElementById('whiteRate').textContent = gameState.winRate.white + '%';
+            document.getElementById('rateFill').style.background = 
+                `linear-gradient(90deg, #333 0%, #333 ${blackRate}%, #fff ${blackRate}%, #fff 100%)`;
+            
+            document.getElementById('territoryBlack').textContent = territoryBlack;
+            document.getElementById('territoryWhite').textContent = territoryWhite;
+        }
+
+        // 计算领地
+        function calculateTerritory() {
+            let territoryBlack = 0;
+            let territoryWhite = 0;
+            
+            for (let y = 0; y < 19; y++) {
+                for (let x = 0; x < 19; x++) {
+                    if (gameState.board[y][x] === 'black') {
+                        territoryBlack++;
+                    } else if (gameState.board[y][x] === 'white') {
+                        territoryWhite++;
+                    }
+                }
+            }
+            
+            return { territoryBlack, territoryWhite };
+        }
+
+        // 提供教学提示
+        function provideTeachingHint() {
+            const point = teachingPoints[gameState.currentTeachingPoint];
+            if (!point) return;
+            
+            document.getElementById('hintContent').textContent = point.content;
+            document.getElementById('hintSuggestion').textContent = point.suggestion;
+            
+            // 显示提示位置
+            if (point.hintPositions && point.hintPositions.length > 0) {
+                showHintPositions(point.hintPositions);
+            }
+        }
+
+        // 显示提示位置
+        function showHintPositions(positions) {
+            const intersections = document.querySelectorAll('.intersection');
+            intersections.forEach(intersection => {
+                intersection.querySelectorAll('.stone.hint').forEach(h => h.remove());
+            });
+            
+            positions.forEach(pos => {
+                const index = pos.y * 19 + pos.x;
+                const intersection = intersections[index];
+                if (intersection && !gameState.board[pos.y][pos.x]) {
+                    const hint = document.createElement('div');
+                    hint.className = 'stone hint';
+                    hint.style.background = 'rgba(233, 69, 96, 0.5)';
+                    hint.style.border = '2px solid #e94560';
+                    intersection.appendChild(hint);
+                }
+            });
+        }
+
+        // 更新教学进度
+        function updateTeachingProgress() {
+            const progress = (gameState.completedPoints.length / 100) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('currentProgress').textContent = gameState.completedPoints.length;
+        }
+
+        // 加载教学点
+        function loadTeachingPoint(pointNumber) {
+            if (pointNumber > gameState.currentTeachingPoint + 1) {
+                alert('请先完成前面的教学点！');
+                return;
+            }
+            
+            gameState.currentTeachingPoint = pointNumber;
+            provideTeachingHint();
+            
+            // 更新UI
+            document.querySelectorAll('.teaching-point').forEach((el, index) => {
+                el.classList.remove('active');
+                if (index + 1 === pointNumber) {
+                    el.classList.add('active');
+                }
+            });
+        }
+
+        // 请求提示
+        function requestHint() {
+            provideTeachingHint();
+            
+            // 闪烁提示
+            const hintBox = document.getElementById('hintBox');
+            hintBox.style.animation = 'pulse 0.5s 3';
+            setTimeout(() => {
+                hintBox.style.animation = '';
+            }, 1500);
+        }
+
+        // 悔棋
+        function undoMove() {
+            if (gameState.gameHistory.length === 0) return;
+            
+            gameState.gameHistory.pop();
+            if (gameState.gameHistory.length === 0) {
+                resetGame();
+                return;
+            }
+            
+            const lastState = gameState.gameHistory[gameState.gameHistory.length - 1];
+            gameState.board = lastState.board;
+            gameState.currentPlayer = lastState.player === 'black' ? 'white' : 'black';
+            gameState.moveCount--;
+            
+            renderBoard();
+            updateGameInfo();
+            calculateWinRate();
+        }
+
+        // 停一手
+        function passMove() {
+            gameState.currentPlayer = gameState.currentPlayer === 'black' ? 'white' : 'black';
+            updateGameInfo();
+            alert(`${gameState.currentPlayer === 'black' ? '白棋' : '黑棋'}停一手，轮到${gameState.currentPlayer === 'black' ? '黑棋' : '白棋'}下`);
+        }
+
+        // 计算胜负
+        function calculateScore() {
+            const { territoryBlack, territoryWhite } = calculateTerritory();
+            const blackScore = territoryBlack + gameState.capturedWhite;
+            const whiteScore = territoryWhite + gameState.capturedBlack + 6.5;
+            
+            let result = `黑棋：${blackScore.toFixed(1)}目\n`;
+            result += `白棋：${whiteScore.toFixed(1)}目\n\n`;
+            result += blackScore > whiteScore ? '黑棋胜！' : '白棋胜！';
+            
+            alert(result);
+        }
+
+        // 重新开始
+        function resetGame() {
+            gameState.board = Array(19).fill(null).map(() => Array(19).fill(null));
+            gameState.currentPlayer = 'black';
+            gameState.moveCount = 0;
+            gameState.capturedBlack = 0;
+            gameState.capturedWhite = 0;
+            gameState.lastMove = null;
+            gameState.gameHistory = [];
+            
+            renderBoard();
+            updateGameInfo();
+            calculateWinRate();
+            provideTeachingHint();
+        }
+
+        // 显示教学弹窗
+        function showTeachingModal() {
+            document.getElementById('teachingModal').classList.add('active');
+        }
+
+        // 关闭教学弹窗
+        function closeTeachingModal() {
+            document.getElementById('teachingModal').classList.remove('active');
+        }
+
+        // 改变游戏模式
+        function changeGameMode() {
+            const mode = document.getElementById('gameMode').value;
+            if (mode === 'teaching') {
+                provideTeachingHint();
+            }
+        }
+
+        // 初始化
+        window.onload = function() {
+            initBoard();
+            provideTeachingHint();
+            calculateWinRate();
+        };
+    </script>
+</body>
+</html>
