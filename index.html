@@ -3,232 +3,550 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>围棋大师 - AI教学对弈平台</title>
+    <title>弈道 - 水墨围棋 v2.0</title>
+    <!-- 引入古风字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --ink-black: #1a1a1a;
+            --ink-gray: #3a3a3a;
+            --paper-white: #f5f0e8;
+            --paper-aged: #e8e0d0;
+            --cinnabar: #8b0000;
+            --cinnabar-light: #b22222;
+            --bamboo: #2d5016;
+            --bamboo-light: #4a7c23;
+            --gold: #d4af37;
+            --mist: rgba(200, 200, 200, 0.3);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            color: #fff;
+        @keyframes inkSpread {
+            0% { transform: scale(0); opacity: 0.8; }
+            100% { transform: scale(3); opacity: 0; }
         }
+
+        @keyframes mistFloat {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-20px) translateX(10px); opacity: 0.5; }
+        }
+
+        @keyframes bambooSway {
+            0%, 100% { transform: rotate(-2deg); }
+            50% { transform: rotate(2deg); }
+        }
+
+        @keyframes brushStroke {
+            0% { stroke-dashoffset: 1000; }
+            100% { stroke-dashoffset: 0; }
+        }
+
+        @keyframes stoneDrop {
+            0% { transform: translate(-50%, -100px) scale(1.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        @keyframes sealStamp {
+            0% { transform: scale(2); opacity: 0; }
+            50% { transform: scale(0.9); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        body {
+            font-family: 'Noto Serif SC', 'ZCOOL XiaoWei', serif;
+            background: linear-gradient(135deg, #f5f0e8 0%, #e8e0d0 50%, #d4cfc0 100%);
+            min-height: 100vh;
+            color: var(--ink-black);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 水墨背景装饰 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(0,0,0,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(0,0,0,0.02) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 飘动的云雾 */
+        .mist {
+            position: fixed;
+            width: 300px;
+            height: 200px;
+            background: radial-gradient(ellipse, rgba(200,200,200,0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .mist-1 { top: 10%; left: 5%; animation: mistFloat 8s ease-in-out infinite; }
+        .mist-2 { top: 60%; right: 10%; animation: mistFloat 10s ease-in-out infinite 2s; }
+        .mist-3 { bottom: 20%; left: 30%; animation: mistFloat 12s ease-in-out infinite 4s; }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            position: relative;
+            z-index: 10;
         }
 
-        /* 头部 */
+        /* 头部 - 卷轴风格 */
         .header {
             text-align: center;
-            padding: 20px 0;
-            border-bottom: 2px solid #e94560;
+            padding: 40px 0;
+            position: relative;
+            background: linear-gradient(to bottom, 
+                transparent 0%, 
+                rgba(139, 0, 0, 0.05) 20%, 
+                rgba(139, 0, 0, 0.08) 50%,
+                rgba(139, 0, 0, 0.05) 80%,
+                transparent 100%);
+            border-top: 3px double var(--cinnabar);
+            border-bottom: 3px double var(--cinnabar);
+            margin-bottom: 30px;
         }
 
+        .header::before,
+        .header::after {
+            content: '❖';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--cinnabar);
+            font-size: 1.5rem;
+        }
+
+        .header::before { left: 50px; }
+        .header::after { right: 50px; }
+
         .header h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(45deg, #e94560, #ff6b6b);
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 3.5rem;
+            background: linear-gradient(45deg, var(--ink-black), var(--cinnabar));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
+            letter-spacing: 0.3em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: var(--ink-gray);
+            font-style: italic;
+            letter-spacing: 0.2em;
         }
 
         /* 主布局 */
         .main-layout {
             display: grid;
-            grid-template-columns: 280px 1fr 320px;
-            gap: 20px;
+            grid-template-columns: 300px 1fr 340px;
+            gap: 25px;
             margin-top: 20px;
         }
 
-        /* 左侧：教学面板 */
-        .teaching-panel {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
+        /* 竹简风格面板 */
+        .bamboo-panel {
+            background: linear-gradient(90deg, 
+                #d4c4a8 0%, 
+                #e8dcc8 5%, 
+                #d4c4a8 10%,
+                #e8dcc8 15%,
+                #d4c4a8 20%,
+                #e8dcc8 25%,
+                #d4c4a8 30%,
+                #e8dcc8 35%,
+                #d4c4a8 40%,
+                #e8dcc8 45%,
+                #d4c4a8 50%,
+                #e8dcc8 55%,
+                #d4c4a8 60%,
+                #e8dcc8 65%,
+                #d4c4a8 70%,
+                #e8dcc8 75%,
+                #d4c4a8 80%,
+                #e8dcc8 85%,
+                #d4c4a8 90%,
+                #e8dcc8 95%,
+                #d4c4a8 100%
+            );
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 
+                0 4px 20px rgba(0,0,0,0.15),
+                inset 0 0 60px rgba(139, 69, 19, 0.1);
+            border: 2px solid #8b7355;
+            position: relative;
         }
 
-        .teaching-panel h3 {
-            color: #e94560;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
+        .bamboo-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+            pointer-events: none;
+            border-radius: 8px;
         }
 
-        .progress-bar {
-            background: rgba(255,255,255,0.1);
-            height: 8px;
-            border-radius: 4px;
-            margin-bottom: 15px;
+        .panel-title {
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 1.4rem;
+            color: var(--cinnabar);
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid var(--cinnabar);
+            padding-bottom: 10px;
+            position: relative;
+        }
+
+        .panel-title::after {
+            content: '◆';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #d4c4a8;
+            padding: 0 10px;
+            color: var(--cinnabar);
+            font-size: 0.8rem;
+        }
+
+        /* 进度条 - 卷轴风格 */
+        .scroll-progress {
+            background: linear-gradient(to bottom, #8b7355, #a08060, #8b7355);
+            height: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
             overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+            border: 1px solid #6b5344;
         }
 
-        .progress-fill {
-            background: linear-gradient(90deg, #e94560, #ff6b6b);
+        .scroll-fill {
+            background: linear-gradient(90deg, var(--cinnabar), var(--cinnabar-light));
             height: 100%;
             width: 0%;
-            transition: width 0.3s;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(139, 0, 0, 0.5);
+            position: relative;
         }
 
-        .teaching-point {
-            background: rgba(233, 69, 96, 0.1);
-            border-left: 3px solid #e94560;
-            padding: 12px;
-            margin-bottom: 10px;
+        .scroll-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+        }
+
+        /* 教学点 - 竹简条 */
+        .teaching-slat {
+            background: linear-gradient(90deg, 
+                rgba(212, 196, 168, 0.9) 0%,
+                rgba(232, 220, 200, 0.95) 50%,
+                rgba(212, 196, 168, 0.9) 100%
+            );
+            border-left: 4px solid var(--bamboo);
+            padding: 12px 15px;
+            margin-bottom: 12px;
             border-radius: 0 8px 8px 0;
             cursor: pointer;
             transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
         }
 
-        .teaching-point:hover {
-            background: rgba(233, 69, 96, 0.2);
+        .teaching-slat:hover {
             transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left-color: var(--cinnabar);
         }
 
-        .teaching-point.active {
-            background: rgba(233, 69, 96, 0.3);
+        .teaching-slat.active {
+            background: linear-gradient(90deg,
+                rgba(139, 0, 0, 0.15) 0%,
+                rgba(139, 0, 0, 0.08) 50%,
+                rgba(139, 0, 0, 0.15) 100%
+            );
+            border-left-color: var(--cinnabar);
+            box-shadow: 0 0 15px rgba(139, 0, 0, 0.2);
         }
 
-        .point-number {
+        .slat-number {
             display: inline-block;
-            background: #e94560;
+            background: var(--cinnabar);
             color: #fff;
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             text-align: center;
-            line-height: 24px;
+            line-height: 28px;
+            font-size: 0.85rem;
+            margin-right: 10px;
+            font-family: 'ZCOOL XiaoWei', serif;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .slat-title {
+            font-size: 0.95rem;
+            color: var(--ink-black);
+            font-weight: 600;
+        }
+
+        .slat-status {
             font-size: 0.8rem;
-            margin-right: 8px;
-        }
-
-        .point-title {
-            font-size: 0.9rem;
-            color: #fff;
-        }
-
-        .point-status {
-            font-size: 0.75rem;
-            color: #888;
+            color: var(--ink-gray);
             margin-top: 5px;
+            margin-left: 38px;
+            font-style: italic;
         }
 
-        /* 中间：棋盘区域 */
+        /* 棋盘区域 */
         .board-section {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        /* 胜率显示 */
-        .win-rate-panel {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 15px 25px;
-            margin-bottom: 15px;
+        /* 胜率面板 - 印章风格 */
+        .seal-panel {
+            background: linear-gradient(135deg, 
+                rgba(245, 240, 232, 0.95) 0%, 
+                rgba(232, 224, 208, 0.95) 100%
+            );
+            border-radius: 4px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 30px;
-            backdrop-filter: blur(10px);
+            gap: 40px;
+            box-shadow: 
+                0 4px 20px rgba(0,0,0,0.1),
+                inset 0 0 30px rgba(139, 0, 0, 0.05);
+            border: 3px double var(--cinnabar);
+            position: relative;
+        }
+
+        .seal-panel::before {
+            content: '弈';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 3rem;
+            color: rgba(139, 0, 0, 0.1);
+            transform: rotate(-15deg);
         }
 
         .rate-item {
             text-align: center;
+            position: relative;
         }
 
         .rate-label {
-            font-size: 0.85rem;
-            color: #888;
-            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--ink-gray);
+            margin-bottom: 8px;
+            font-family: 'ZCOOL XiaoWei', serif;
         }
 
         .rate-value {
-            font-size: 1.8rem;
+            font-size: 2.2rem;
             font-weight: bold;
+            font-family: 'ZCOOL XiaoWei', serif;
         }
 
-        .rate-black { color: #333; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        .rate-white { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .rate-black { 
+            color: var(--ink-black);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .rate-white { 
+            color: #666;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
 
-        .rate-bar {
-            width: 200px;
-            height: 10px;
-            background: #fff;
-            border-radius: 5px;
+        .rate-scroll {
+            width: 220px;
+            height: 14px;
+            background: linear-gradient(to bottom, #d4c4a8, #e8dcc8, #d4c4a8);
+            border-radius: 7px;
             overflow: hidden;
-            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            border: 1px solid #8b7355;
         }
 
         .rate-fill {
             height: 100%;
-            background: linear-gradient(90deg, #333 0%, #333 50%, #fff 50%, #fff 100%);
-            transition: all 0.5s;
+            background: linear-gradient(90deg, 
+                var(--ink-black) 0%, 
+                var(--ink-black) var(--black-rate, 50%), 
+                #fff var(--black-rate, 50%), 
+                #fff 100%
+            );
+            transition: all 0.5s ease;
         }
 
-        /* 提示框 */
-        .hint-box {
-            background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(255, 107, 107, 0.2));
-            border: 1px solid #e94560;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            max-width: 600px;
+        /* 提示框 - 卷轴风格 */
+        .scroll-hint {
+            background: linear-gradient(135deg, 
+                rgba(245, 240, 232, 0.98) 0%, 
+                rgba(255, 250, 240, 0.98) 100%
+            );
+            border: 2px solid var(--cinnabar);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            max-width: 650px;
+            box-shadow: 
+                0 4px 20px rgba(0,0,0,0.1),
+                inset 0 0 40px rgba(139, 0, 0, 0.03);
+            position: relative;
         }
+
+        .scroll-hint::before,
+        .scroll-hint::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 100%;
+            background: linear-gradient(to bottom, 
+                #8b7355 0%, 
+                #a08060 50%, 
+                #8b7355 100%
+            );
+            top: 0;
+        }
+
+        .scroll-hint::before { left: -10px; border-radius: 4px 0 0 4px; }
+        .scroll-hint::after { right: -10px; border-radius: 0 4px 4px 0; }
 
         .hint-title {
-            color: #e94560;
+            color: var(--cinnabar);
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 1.2rem;
+            border-bottom: 1px dashed var(--cinnabar);
+            padding-bottom: 8px;
         }
 
         .hint-content {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: #ddd;
+            font-size: 1rem;
+            line-height: 1.8;
+            color: var(--ink-black);
+            text-align: justify;
         }
 
         .hint-suggestion {
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 5px;
-            font-size: 0.9rem;
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(139, 0, 0, 0.05);
+            border-radius: 4px;
+            font-size: 0.95rem;
+            border-left: 3px solid var(--gold);
         }
 
         .hint-suggestion::before {
-            content: "💡 建议：";
-            color: #ffd700;
+            content: "【妙手提示】";
+            color: var(--cinnabar);
+            font-weight: bold;
+            font-family: 'ZCOOL XiaoWei', serif;
         }
 
-        /* 棋盘 */
+        /* 演示控制 */
+        .demo-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        .demo-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, var(--cinnabar), var(--cinnabar-light));
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
+        }
+
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
+        }
+
+        .demo-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 棋盘 - 水墨风格 */
         .board-container {
             position: relative;
-            background: #dcb35c;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            background: linear-gradient(135deg, #dcb35c, #c9a050);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 
+                0 10px 40px rgba(0,0,0,0.3),
+                inset 0 0 100px rgba(0,0,0,0.1);
+            border: 8px solid #8b6914;
+            position: relative;
+        }
+
+        .board-container::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            right: -15px;
+            bottom: -15px;
+            background: linear-gradient(135deg, #8b6914, #6b4d0e);
+            border-radius: 12px;
+            z-index: -1;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.4);
         }
 
         #board {
             display: grid;
-            grid-template-columns: repeat(19, 30px);
-            grid-template-rows: repeat(19, 30px);
+            grid-template-columns: repeat(19, 32px);
+            grid-template-rows: repeat(19, 32px);
             gap: 0;
             background: #dcb35c;
+            position: relative;
         }
 
         .intersection {
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             position: relative;
             cursor: pointer;
         }
@@ -237,7 +555,7 @@
         .intersection::after {
             content: '';
             position: absolute;
-            background: #333;
+            background: #2a2a2a;
         }
 
         .intersection::before {
@@ -254,126 +572,200 @@
             transform: translateY(-50%);
         }
 
+        /* 水墨棋子 */
         .stone {
             position: absolute;
-            width: 26px;
-            height: 26px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: stoneDrop 0.4s ease-out;
         }
 
         .stone.black {
-            background: radial-gradient(circle at 30% 30%, #555, #000);
+            background: radial-gradient(circle at 35% 35%, #3a3a3a 0%, #0a0a0a 50%, #000 100%);
+            box-shadow: 
+                2px 2px 6px rgba(0,0,0,0.5),
+                inset -2px -2px 4px rgba(255,255,255,0.1);
         }
 
         .stone.white {
-            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+            background: radial-gradient(circle at 35% 35%, #fff 0%, #e8e8e8 50%, #d0d0d0 100%);
+            box-shadow: 
+                2px 2px 6px rgba(0,0,0,0.3),
+                inset -2px -2px 4px rgba(0,0,0,0.1);
         }
 
         .stone.hint {
-            animation: pulse 1.5s infinite;
-            box-shadow: 0 0 15px #e94560;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 20px var(--cinnabar);
+        }
+
+        .stone.hint::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background: var(--cinnabar);
+            border-radius: 50%;
+            opacity: 0.7;
         }
 
         @keyframes pulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.1); }
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
         }
 
-        /* 星位 */
+        /* 星位 - 朱砂点 */
         .star-point::before {
             content: '';
             position: absolute;
-            width: 6px;
-            height: 6px;
-            background: #333;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, var(--cinnabar) 0%, #8b0000 100%);
             border-radius: 50%;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 5;
+            box-shadow: 0 0 4px rgba(139, 0, 0, 0.5);
         }
 
-        /* 右侧：控制面板 */
-        .control-panel {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
+        /* 最后落子标记 - 朱砂印 */
+        .last-move::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--cinnabar);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 15;
+            box-shadow: 0 0 8px var(--cinnabar);
+            animation: sealStamp 0.3s ease-out;
+        }
+
+        /* 控制面板 */
+        .control-slat {
+            background: linear-gradient(90deg, 
+                rgba(212, 196, 168, 0.9) 0%,
+                rgba(232, 220, 200, 0.95) 50%,
+                rgba(212, 196, 168, 0.9) 100%
+            );
+            border-radius: 8px;
             padding: 20px;
-            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border: 2px solid #8b7355;
         }
 
-        .control-panel h3 {
-            color: #e94560;
-            margin-bottom: 15px;
-        }
-
-        .game-info {
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
+        .game-info-slat {
+            background: rgba(255,255,255,0.5);
+            border-radius: 6px;
             padding: 15px;
             margin-bottom: 20px;
+            border: 1px solid #c4b49a;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #c4b49a;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
 
         .info-label {
-            color: #888;
+            color: var(--ink-gray);
+            font-family: 'ZCOOL XiaoWei', serif;
         }
 
         .info-value {
-            color: #fff;
+            color: var(--ink-black);
             font-weight: bold;
+            font-family: 'ZCOOL XiaoWei', serif;
         }
 
-        .btn {
+        .slat-btn {
             width: 100%;
             padding: 12px;
             margin-bottom: 10px;
             border: none;
-            border-radius: 8px;
+            border-radius: 4px;
             cursor: pointer;
+            font-family: 'Noto Serif SC', serif;
             font-size: 1rem;
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #e94560, #ff6b6b);
+        .slat-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .slat-btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-cinnabar {
+            background: linear-gradient(135deg, var(--cinnabar), var(--cinnabar-light));
             color: #fff;
+            box-shadow: 0 3px 10px rgba(139, 0, 0, 0.3);
         }
 
-        .btn-primary:hover {
+        .btn-cinnabar:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+            box-shadow: 0 5px 15px rgba(139, 0, 0, 0.4);
         }
 
-        .btn-secondary {
-            background: rgba(255,255,255,0.1);
+        .btn-bamboo {
+            background: linear-gradient(135deg, var(--bamboo), var(--bamboo-light));
             color: #fff;
+            box-shadow: 0 3px 10px rgba(45, 80, 22, 0.3);
         }
 
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.2);
+        .btn-bamboo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(45, 80, 22, 0.4);
         }
 
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .btn-paper {
+            background: linear-gradient(135deg, #d4c4a8, #c4b49a);
+            color: var(--ink-black);
+            border: 1px solid #8b7355;
+        }
+
+        .btn-paper:hover {
+            background: linear-gradient(135deg, #c4b49a, #b4a48a);
         }
 
         /* 设置面板 */
-        .settings {
+        .settings-slat {
             margin-top: 20px;
             padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 2px dashed #c4b49a;
         }
 
         .setting-item {
@@ -381,89 +773,22 @@
         }
 
         .setting-label {
-            font-size: 0.85rem;
-            color: #888;
-            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--ink-gray);
+            margin-bottom: 6px;
             display: block;
+            font-family: 'ZCOOL XiaoWei', serif;
         }
 
         .setting-select {
             width: 100%;
-            padding: 8px;
-            background: rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 5px;
-            color: #fff;
-        }
-
-        /* 教学模式弹窗 */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
-            background: #1a1a2e;
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 800px;
-            max-height: 80vh;
-            overflow-y: auto;
-            border: 2px solid #e94560;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            color: #e94560;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: #888;
-            font-size: 1.5rem;
+            padding: 10px;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid #c4b49a;
+            border-radius: 4px;
+            color: var(--ink-black);
+            font-family: 'Noto Serif SC', serif;
             cursor: pointer;
-        }
-
-        .teaching-content {
-            line-height: 1.8;
-        }
-
-        .teaching-content h4 {
-            color: #e94560;
-            margin: 15px 0 10px;
-        }
-
-        .teaching-content p {
-            color: #ddd;
-            margin-bottom: 10px;
-        }
-
-        .example-board {
-            background: #dcb35c;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            display: inline-block;
         }
 
         /* 响应式 */
@@ -472,101 +797,126 @@
                 grid-template-columns: 1fr;
             }
             
-            .teaching-panel,
-            .control-panel {
+            .bamboo-panel,
+            .control-slat {
                 max-width: 600px;
                 margin: 0 auto;
             }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
         }
 
-        /* 最后落子标记 */
-        .last-move::after {
-            content: '';
+        /* 动画类 */
+        .ink-spread {
             position: absolute;
-            width: 8px;
-            height: 8px;
-            background: #e94560;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(0,0,0,0.3) 0%, transparent 70%);
             border-radius: 50%;
+            animation: inkSpread 1s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* 演示步骤指示器 */
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #c4b49a;
+            transition: all 0.3s;
+        }
+
+        .step-dot.active {
+            background: var(--cinnabar);
+            transform: scale(1.3);
+        }
+
+        .step-dot.completed {
+            background: var(--bamboo);
+        }
+
+        /* 演示说明浮层 */
+        .demo-overlay {
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 15;
+            background: rgba(245, 240, 232, 0.98);
+            padding: 20px 30px;
+            border-radius: 8px;
+            border: 2px solid var(--cinnabar);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 100;
+            text-align: center;
+            max-width: 400px;
         }
 
-        /* 领地标记 */
-        .territory-black {
-            background: rgba(0,0,0,0.3) !important;
+        .demo-overlay h4 {
+            color: var(--cinnabar);
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
         }
 
-        .territory-white {
-            background: rgba(255,255,255,0.3) !important;
+        .demo-overlay p {
+            color: var(--ink-black);
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
+    <!-- 云雾装饰 -->
+    <div class="mist mist-1"></div>
+    <div class="mist mist-2"></div>
+    <div class="mist mist-3"></div>
+
     <div class="container">
         <!-- 头部 -->
         <div class="header">
-            <h1>🏆 围棋大师 - AI教学对弈平台</h1>
-            <p>从入门到职业，100个教学点带你成为围棋高手</p>
+            <h1>弈 道</h1>
+            <p>以棋入道 · 百炼成圣</p>
         </div>
 
         <!-- 主布局 -->
         <div class="main-layout">
             <!-- 左侧：教学面板 -->
-            <div class="teaching-panel">
-                <h3>📚 教学模式</h3>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
+            <div class="bamboo-panel">
+                <h3 class="panel-title">📜 修行进度</h3>
+                <div class="scroll-progress">
+                    <div class="scroll-fill" id="progressFill"></div>
                 </div>
-                <p style="font-size: 0.85rem; color: #888; margin-bottom: 15px;">
-                    当前进度：<span id="currentProgress">0</span>/100 教学点
+                <p style="font-size: 0.9rem; color: var(--ink-gray); margin-bottom: 20px; text-align: center; font-family: 'ZCOOL XiaoWei', serif;">
+                    当前境界：<span id="currentRealm">入门</span> · <span id="currentProgress">0</span>/100
                 </p>
 
-                <div class="teaching-point active" onclick="loadTeachingPoint(1)">
-                    <span class="point-number">1</span>
-                    <span class="point-title">认识棋盘与棋子</span>
-                    <div class="point-status">正在学习</div>
+                <div id="teachingList">
+                    <!-- 教学点列表由JS动态生成 -->
                 </div>
 
-                <div class="teaching-point" onclick="loadTeachingPoint(2)">
-                    <span class="point-number">2</span>
-                    <span class="point-title">气的概念</span>
-                    <div class="point-status">未解锁</div>
-                </div>
-
-                <div class="teaching-point" onclick="loadTeachingPoint(3)">
-                    <span class="point-number">3</span>
-                    <span class="point-title">提子规则</span>
-                    <div class="point-status">未解锁</div>
-                </div>
-
-                <div class="teaching-point" onclick="loadTeachingPoint(4)">
-                    <span class="point-number">4</span>
-                    <span class="point-title">打吃与吃子</span>
-                    <div class="point-status">未解锁</div>
-                </div>
-
-                <div class="teaching-point" onclick="loadTeachingPoint(5)">
-                    <span class="point-number">5</span>
-                    <span class="point-title">连接与切断</span>
-                    <div class="point-status">未解锁</div>
-                </div>
-
-                <button class="btn btn-secondary" onclick="showTeachingModal()" style="margin-top: 15px;">
-                    查看完整教学大纲
+                <button class="slat-btn btn-paper" onclick="showTeachingModal()" style="margin-top: 15px;">
+                    查看完整修行大纲
                 </button>
             </div>
 
             <!-- 中间：棋盘区域 -->
             <div class="board-section">
                 <!-- 胜率显示 -->
-                <div class="win-rate-panel">
+                <div class="seal-panel">
                     <div class="rate-item">
                         <div class="rate-label">黑棋胜率</div>
                         <div class="rate-value rate-black" id="blackRate">50%</div>
                     </div>
-                    <div class="rate-bar">
+                    <div class="rate-scroll">
                         <div class="rate-fill" id="rateFill"></div>
                     </div>
                     <div class="rate-item">
@@ -575,144 +925,114 @@
                     </div>
                 </div>
 
+                <!-- 演示控制 -->
+                <div class="demo-controls" id="demoControls" style="display: none;">
+                    <button class="demo-btn" onclick="startDemo()">▶ 开始演示</button>
+                    <button class="demo-btn" onclick="pauseDemo()">⏸ 暂停</button>
+                    <button class="demo-btn" onclick="resetDemo()">↺ 重置</button>
+                </div>
+
+                <div class="step-indicator" id="stepIndicator"></div>
+
                 <!-- AI提示框 -->
-                <div class="hint-box" id="hintBox">
+                <div class="scroll-hint" id="hintBox">
                     <div class="hint-title">
-                        <span>🤖</span>
-                        <span>AI 教学提示</span>
+                        <span>📖</span>
+                        <span id="hintTitle">弈道初启</span>
                     </div>
                     <div class="hint-content" id="hintContent">
-                        欢迎来到围棋大师！这是你的第一堂课。请先在棋盘上放置一颗黑子，熟悉一下落子的感觉。
+                        欢迎来到弈道。围棋之道，始于黑白，成于天地。请先观摩棋局演示，领悟落子之妙。
                     </div>
                     <div class="hint-suggestion" id="hintSuggestion">
-                        尝试在棋盘中心（天元）或四个星位落子，这些都是开局的好位置。
+                        点击"开始演示"观看本课棋局，或直接在棋盘上落子练习。
                     </div>
                 </div>
 
                 <!-- 棋盘 -->
-                <div class="board-container">
+                <div class="board-container" id="boardContainer">
                     <div id="board"></div>
                 </div>
             </div>
 
             <!-- 右侧：控制面板 -->
-            <div class="control-panel">
-                <h3>🎮 游戏控制</h3>
+            <div class="control-slat">
+                <h3 class="panel-title">🎮 对弈控制台</h3>
                 
-                <div class="game-info">
+                <div class="game-info-slat">
                     <div class="info-row">
-                        <span class="info-label">当前手数</span>
-                        <span class="info-value" id="moveCount">0</span>
+                        <span class="info-label">手数</span>
+                        <span class="info-value" id="moveCount">零</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">当前回合</span>
+                        <span class="info-label">回合</span>
                         <span class="info-value" id="currentTurn">黑棋</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">提子数（黑）</span>
-                        <span class="info-value" id="capturedBlack">0</span>
+                        <span class="info-label">提子（黑）</span>
+                        <span class="info-value" id="capturedBlack">零</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">提子数（白）</span>
-                        <span class="info-value" id="capturedWhite">0</span>
+                        <span class="info-label">提子（白）</span>
+                        <span class="info-value" id="capturedWhite">零</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">黑棋领地</span>
-                        <span class="info-value" id="territoryBlack">0</span>
+                        <span class="info-value" id="territoryBlack">零</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">白棋领地</span>
-                        <span class="info-value" id="territoryWhite">0</span>
+                        <span class="info-value" id="territoryWhite">零</span>
                     </div>
                 </div>
 
-                <button class="btn btn-primary" onclick="requestHint()">
-                    💡 获取提示
+                <button class="slat-btn btn-cinnabar" onclick="requestHint()">
+                    💡 求道问棋
                 </button>
-                <button class="btn btn-secondary" onclick="undoMove()">
-                    ↩️ 悔棋
+                <button class="slat-btn btn-bamboo" onclick="undoMove()">
+                    ↩️ 悔棋一步
                 </button>
-                <button class="btn btn-secondary" onclick="passMove()">
-                    ⏭️ 停一手
+                <button class="slat-btn btn-paper" onclick="passMove()">
+                    ⏭️ 停手示意
                 </button>
-                <button class="btn btn-secondary" onclick="calculateScore()">
+                <button class="slat-btn btn-paper" onclick="calculateScore()">
                     📊 计算胜负
                 </button>
-                <button class="btn btn-secondary" onclick="resetGame()">
+                <button class="slat-btn btn-paper" onclick="resetGame()">
                     🔄 重新开始
                 </button>
 
-                <div class="settings">
-                    <h3 style="font-size: 1rem; margin-bottom: 15px;">⚙️ 游戏设置</h3>
+                <div class="settings-slat">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 15px; color: var(--cinnabar); font-family: 'ZCOOL XiaoWei', serif;">⚙️ 对弈设置</h3>
                     
                     <div class="setting-item">
-                        <label class="setting-label">游戏模式</label>
+                        <label class="setting-label">对弈模式</label>
                         <select class="setting-select" id="gameMode" onchange="changeGameMode()">
-                            <option value="teaching">教学模式</option>
-                            <option value="ai">人机对弈</option>
-                            <option value="local">本地对弈</option>
+                            <option value="teaching">📚 修行模式</option>
+                            <option value="ai">🤖 人机对弈</option>
+                            <option value="local">👥 本地对弈</option>
                         </select>
                     </div>
 
                     <div class="setting-item">
-                        <label class="setting-label">AI难度</label>
+                        <label class="setting-label">AI境界</label>
                         <select class="setting-select" id="aiLevel">
-                            <option value="beginner">入门</option>
-                            <option value="intermediate">中级</option>
-                            <option value="advanced">高级</option>
-                            <option value="master">大师</option>
+                            <option value="beginner">🌱 入门</option>
+                            <option value="intermediate">🎋 进阶</option>
+                            <option value="advanced">🎍 精通</option>
+                            <option value="master">🐉 大师</option>
                         </select>
                     </div>
 
                     <div class="setting-item">
-                        <label class="setting-label">提示频率</label>
+                        <label class="setting-label">道心提示</label>
                         <select class="setting-select" id="hintFrequency">
-                            <option value="always">总是显示</option>
-                            <option value="sometimes">偶尔显示</option>
-                            <option value="rarely">很少显示</option>
-                            <option value="never">不显示</option>
+                            <option value="always">📖 常显</option>
+                            <option value="sometimes">📜 偶显</option>
+                            <option value="rarely">📃 稀显</option>
+                            <option value="never">🚫 不显</option>
                         </select>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 教学模式弹窗 -->
-    <div class="modal-overlay" id="teachingModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title">📚 围棋教学大纲（100个教学点）</h3>
-                <button class="modal-close" onclick="closeTeachingModal()">&times;</button>
-            </div>
-            <div class="teaching-content">
-                <h4>第一阶段：入门篇（1-25点）</h4>
-                <p>第1-5点：认识围棋 - 围棋起源、棋盘棋子、基本规则、气的概念、提子规则</p>
-                <p>第6-10点：吃子技巧 - 打吃、双打吃、门吃、抱吃、征子</p>
-                <p>第11-15点：连接与切断 - 连接的重要性、双连接、切断概念、分断技巧、平衡</p>
-                <p>第16-20点：死活基础 - 真眼假眼、做眼技巧、破眼方法、活形死形、双活</p>
-                <p>第21-25点：基础对杀 - 对杀概念、气的计算、对杀技巧、有眼杀无眼、综合测试</p>
-
-                <h4>第二阶段：进阶篇（26-50点）</h4>
-                <p>第26-30点：布局基础 - 角边腹价值、占角方法、守角挂角、拆边、布局三原则</p>
-                <p>第31-35点：定式入门 - 什么是定式、星位定式、小目定式、三三定式、定式选择</p>
-                <p>第36-40点：中盘战斗 - 打入侵消、攻击方法、防守技巧、腾挪技巧、战斗判断</p>
-                <p>第41-45点：手筋初探 - 什么是手筋、挖、夹、扑、综合运用</p>
-                <p>第46-50点：官子基础 - 官子概念、官子大小、一路官子、二路官子、综合测试</p>
-
-                <h4>第三阶段：提高篇（51-75点）</h4>
-                <p>第51-55点：全局观念 - 形势判断、大场急所、厚薄强弱、棋子效率、全局平衡</p>
-                <p>第56-60点：定式深入 - 定式变化、定式场合、新型AI定式、定式后作战、打破定式</p>
-                <p>第61-65点：高级手筋 - 倒扑、金鸡独立、老鼠偷油、倒脱靴、手筋创造</p>
-                <p>第66-70点：死活进阶 - 角部死活、边部死活、缩小眼位、扩大眼位、经典死活题</p>
-                <p>第71-75点：官子提高 - 官子计算进阶、逆收官子、劫材劫争、收官顺序、综合测试</p>
-
-                <h4>第四阶段：大师篇（76-100点）</h4>
-                <p>第76-80点：AI思维 - AI时代围棋、AI推荐布局、AI定式库、AI中盘思路、AI官子计算</p>
-                <p>第81-85点：职业技巧 - 职业布局构思、中盘算路、胜负感、心理素质、名局欣赏①</p>
-                <p>第86-90点：名局学习 - 日本名局、韩国名局、中国名局、AI名局、打谱方法</p>
-                <p>第91-95点：专项训练 - 布局专项、中盘专项、手筋专项、死活专项、官子专项</p>
-                <p>第96-100点：大师之路 - 围棋哲学、AI时代、围棋教育、围棋人生、终极测试</p>
             </div>
         </div>
     </div>
@@ -729,41 +1049,122 @@
             gameHistory: [],
             currentTeachingPoint: 1,
             completedPoints: [],
-            winRate: { black: 50, white: 50 }
+            winRate: { black: 50, white: 50 },
+            isDemoPlaying: false,
+            demoStep: 0
         };
 
-        // 教学点数据
+        // 教学点数据（含演示棋局）
         const teachingPoints = {
             1: {
-                title: "认识棋盘与棋子",
-                content: "围棋棋盘是19×19的方格，共有361个交叉点。棋子分黑白两色，黑棋先行。",
-                suggestion: "尝试在棋盘中心（天元）或四个星位落子，这些都是开局的好位置。",
-                hintPositions: [{x: 9, y: 9}, {x: 3, y: 3}, {x: 3, y: 15}, {x: 15, y: 3}, {x: 15, y: 15}]
+                title: "认识棋盘",
+                realm: "入门",
+                content: "围棋棋盘纵横十九路，如天地之大。四角四边一中腹，乃棋家必争之地。",
+                suggestion: "观摩演示，看黑子如何占据星位，建立根基。",
+                demoMoves: [
+                    {x: 3, y: 3, player: 'black', comment: "占小目，角上生根"},
+                    {x: 15, y: 3, player: 'white', comment: "白棋呼应，各占一角"},
+                    {x: 3, y: 15, player: 'black', comment: "黑棋再占一角"},
+                    {x: 15, y: 15, player: 'white', comment: "白棋亦占一角，四角平分"},
+                    {x: 9, y: 9, player: 'black', comment: "天元一子，俯瞰全局"}
+                ]
             },
             2: {
                 title: "气的概念",
-                content: "棋子放在棋盘上，与它直线相连的空点称为'气'。棋子必须有气才能生存。",
-                suggestion: "放置一颗棋子，然后数一下它有几口气。角上棋子有2口气，边上3口，中间4口。",
-                hintPositions: []
+                realm: "入门",
+                content: "棋子生于气，无气则亡。角上二气，边上三气，腹中四气，此乃生存之本。",
+                suggestion: "观察演示，看黑子如何数气，白子如何紧气。",
+                demoMoves: [
+                    {x: 9, y: 9, player: 'black', comment: "黑子落天元，有四口气"},
+                    {x: 9, y: 8, player: 'white', comment: "白子紧一气"},
+                    {x: 8, y: 9, player: 'white', comment: "白子再紧一气"},
+                    {x: 10, y: 9, player: 'white', comment: "白子又紧一气"},
+                    {x: 9, y: 10, player: 'white', comment: "白子紧最后一气，黑子被提"}
+                ]
             },
             3: {
                 title: "提子规则",
-                content: "当一颗棋子或一组棋子的所有气都被对方占据时，就被提掉（吃掉）。",
-                suggestion: "尝试制造一个可以提子的局面，把对方的棋子围到没有气。",
-                hintPositions: []
+                realm: "入门",
+                content: "棋子无气当被提，此乃围棋基本法则。然提子之后，亦需防对方反提。",
+                suggestion: "观摩演示，学习如何提子，以及提子后的局面变化。",
+                demoMoves: [
+                    {x: 3, y: 3, player: 'black', comment: "黑子占角"},
+                    {x: 3, y: 4, player: 'black', comment: "黑子连下"},
+                    {x: 4, y: 3, player: 'black', comment: "黑子成三子"},
+                    {x: 2, y: 3, player: 'white', comment: "白子打吃"},
+                    {x: 3, y: 2, player: 'white', comment: "白子再紧气"},
+                    {x: 2, y: 2, player: 'white', comment: "白子提掉黑角一子"}
+                ]
             },
             4: {
                 title: "打吃与吃子",
-                content: "打吃是指让对方棋子只剩一口气。连续打吃可以吃掉对方的棋子。",
-                suggestion: "寻找对方只有两口气的棋子，打吃它，迫使对方逃跑或被你吃掉。",
-                hintPositions: []
+                realm: "入门",
+                content: "打吃者，令敌子剩一气也。连续打吃，可使敌子无路可逃。",
+                suggestion: "观察演示，学习打吃的技巧和时机。",
+                demoMoves: [
+                    {x: 9, y: 9, player: 'black', comment: "黑子占中"},
+                    {x: 9, y: 8, player: 'white', comment: "白子逼近"},
+                    {x: 8, y: 9, player: 'white', comment: "白子再打吃"},
+                    {x: 9, y: 10, player: 'black', comment: "黑子逃跑"},
+                    {x: 10, y: 9, player: 'white', comment: "白子继续追击"},
+                    {x: 9, y: 11, player: 'black', comment: "黑子再逃"},
+                    {x: 10, y: 10, player: 'white', comment: "白子双打吃"}
+                ]
             },
             5: {
                 title: "连接与切断",
-                content: "连接可以让棋子更安全，切断可以攻击对方。这是围棋的基本战术。",
-                suggestion: "观察棋盘，看看哪里可以连接自己的棋子，或者切断对方的连接。",
-                hintPositions: []
+                realm: "入门",
+                content: "连接则棋势厚，切断则敌势分。此乃围棋攻防之要。",
+                suggestion: "观摩演示，学习何时连接，何时切断。",
+                demoMoves: [
+                    {x: 3, y: 3, player: 'black', comment: "黑子占角"},
+                    {x: 5, y: 3, player: 'black', comment: "黑子另占一角"},
+                    {x: 4, y: 3, player: 'white', comment: "白子试图切断"},
+                    {x: 4, y: 4, player: 'black', comment: "黑子跳，准备连接"},
+                    {x: 4, y: 2, player: 'white', comment: "白子继续分断"},
+                    {x: 3, y: 4, player: 'black', comment: "黑子小飞，巩固连接"}
+                ]
             }
+        };
+
+        // 境界名称
+        const realms = {
+            1: "入门", 2: "入门", 3: "入门", 4: "入门", 5: "入门",
+            6: "初窥", 7: "初窥", 8: "初窥", 9: "初窥", 10: "初窥",
+            11: "小成", 12: "小成", 13: "小成", 14: "小成", 15: "小成",
+            16: "精通", 17: "精通", 18: "精通", 19: "精通", 20: "精通",
+            21: "大成", 22: "大成", 23: "大成", 24: "大成", 25: "大成",
+            26: "宗师", 27: "宗师", 28: "宗师", 29: "宗师", 30: "宗师",
+            31: "超凡", 32: "超凡", 33: "超凡", 34: "超凡", 35: "超凡",
+            36: "入圣", 37: "入圣", 38: "入圣", 39: "入圣", 40: "入圣",
+            41: "问道", 42: "问道", 43: "问道", 44: "问道", 45: "问道",
+            46: "悟道", 47: "悟道", 48: "悟道", 49: "悟道", 50: "悟道",
+            51: "化境", 52: "化境", 53: "化境", 54: "化境", 55: "化境",
+            56: "通玄", 57: "通玄", 58: "通玄", 59: "通玄", 60: "通玄",
+            61: "天人", 62: "天人", 63: "天人", 64: "天人", 65: "天人",
+            66: "归一", 67: "归一", 68: "归一", 69: "归一", 70: "归一",
+            71: "无极", 72: "无极", 73: "无极", 74: "无极", 75: "无极",
+            76: "真仙", 77: "真仙", 78: "真仙", 79: "真仙", 80: "真仙",
+            81: "金仙", 82: "金仙", 83: "金仙", 84: "金仙", 85: "金仙",
+            86: "太乙", 87: "太乙", 88: "太乙", 89: "太乙", 90: "太乙",
+            91: "大罗", 92: "大罗", 93: "大罗", 94: "大罗", 95: "大罗",
+            96: "准圣", 97: "准圣", 98: "准圣", 99: "准圣", 100: "圣人"
+        };
+
+        // 数字转中文
+        function numToChinese(num) {
+            const chinese = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+            if (num <= 10) return chinese[num];
+            if (num < 20) return '十' + (num % 10 === 0 ? '' : chinese[num % 10]);
+            return chinese[Math.floor(num / 10)] + '十' + (num % 10 === 0 ? '' : chinese[num % 10]);
+        }
+
+        // 初始化
+        window.onload = function() {
+            initBoard();
+            initTeachingList();
+            updateTeachingDisplay();
+            calculateWinRate();
         };
 
         // 初始化棋盘
@@ -778,7 +1179,6 @@
                     intersection.dataset.x = x;
                     intersection.dataset.y = y;
                     
-                    // 标记星位
                     if ((x === 3 || x === 9 || x === 15) && (y === 3 || y === 9 || y === 15)) {
                         intersection.classList.add('star-point');
                     }
@@ -789,24 +1189,177 @@
             }
         }
 
+        // 初始化教学点列表
+        function initTeachingList() {
+            const list = document.getElementById('teachingList');
+            list.innerHTML = '';
+            
+            for (let i = 1; i <= 5; i++) {
+                const point = teachingPoints[i];
+                if (!point) continue;
+                
+                const slat = document.createElement('div');
+                slat.className = 'teaching-slat' + (i === 1 ? ' active' : '');
+                slat.dataset.point = i;
+                slat.innerHTML = `
+                    <span class="slat-number">${i}</span>
+                    <span class="slat-title">${point.title}</span>
+                    <div class="slat-status">${i === 1 ? '当前修行' : '未解锁'}</div>
+                `;
+                slat.addEventListener('click', () => loadTeachingPoint(i));
+                list.appendChild(slat);
+            }
+        }
+
+        // 更新教学显示
+        function updateTeachingDisplay() {
+            const point = teachingPoints[gameState.currentTeachingPoint];
+            if (!point) return;
+            
+            document.getElementById('hintTitle').textContent = point.title;
+            document.getElementById('hintContent').textContent = point.content;
+            document.getElementById('hintSuggestion').textContent = point.suggestion;
+            document.getElementById('currentRealm').textContent = point.realm;
+            
+            // 显示演示控制
+            if (point.demoMoves) {
+                document.getElementById('demoControls').style.display = 'flex';
+                initStepIndicator(point.demoMoves.length);
+            } else {
+                document.getElementById('demoControls').style.display = 'none';
+            }
+        }
+
+        // 初始化步骤指示器
+        function initStepIndicator(steps) {
+            const indicator = document.getElementById('stepIndicator');
+            indicator.innerHTML = '';
+            for (let i = 0; i < steps; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'step-dot';
+                dot.dataset.step = i;
+                indicator.appendChild(dot);
+            }
+        }
+
+        // 加载教学点
+        function loadTeachingPoint(pointNumber) {
+            if (pointNumber > gameState.currentTeachingPoint + 1) {
+                showMessage('请先完成前面的修行！');
+                return;
+            }
+            
+            gameState.currentTeachingPoint = pointNumber;
+            resetGame();
+            updateTeachingDisplay();
+            
+            // 更新UI
+            document.querySelectorAll('.teaching-slat').forEach((el) => {
+                el.classList.remove('active');
+                if (parseInt(el.dataset.point) === pointNumber) {
+                    el.classList.add('active');
+                    el.querySelector('.slat-status').textContent = '当前修行';
+                }
+            });
+        }
+
+        // 开始演示
+        function startDemo() {
+            const point = teachingPoints[gameState.currentTeachingPoint];
+            if (!point || !point.demoMoves) return;
+            
+            gameState.isDemoPlaying = true;
+            gameState.demoStep = 0;
+            resetGame();
+            
+            playDemoStep();
+        }
+
+        // 播放演示步骤
+        function playDemoStep() {
+            const point = teachingPoints[gameState.currentTeachingPoint];
+            if (!point || !point.demoMoves || gameState.demoStep >= point.demoMoves.length) {
+                gameState.isDemoPlaying = false;
+                return;
+            }
+            
+            const move = point.demoMoves[gameState.demoStep];
+            
+            // 更新步骤指示器
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                dot.classList.remove('active', 'completed');
+                if (index < gameState.demoStep) {
+                    dot.classList.add('completed');
+                } else if (index === gameState.demoStep) {
+                    dot.classList.add('active');
+                }
+            });
+            
+            // 显示注释
+            showDemoComment(move.comment);
+            
+            // 延迟落子
+            setTimeout(() => {
+                if (!gameState.isDemoPlaying) return;
+                
+                gameState.board[move.y][move.x] = move.player;
+                gameState.gameHistory.push({
+                    x: move.x, y: move.y,
+                    player: move.player,
+                    board: JSON.parse(JSON.stringify(gameState.board))
+                });
+                gameState.lastMove = { x: move.x, y: move.y };
+                gameState.moveCount++;
+                gameState.currentPlayer = move.player === 'black' ? 'white' : 'black';
+                
+                renderBoard();
+                updateGameInfo();
+                calculateWinRate();
+                
+                gameState.demoStep++;
+                
+                if (gameState.isDemoPlaying) {
+                    setTimeout(playDemoStep, 2000);
+                }
+            }, 1000);
+        }
+
+        // 显示演示注释
+        function showDemoComment(comment) {
+            const hintContent = document.getElementById('hintContent');
+            hintContent.innerHTML = `<span style="color: var(--cinnabar); font-weight: bold;">【演示】</span> ${comment}`;
+        }
+
+        // 暂停演示
+        function pauseDemo() {
+            gameState.isDemoPlaying = false;
+        }
+
+        // 重置演示
+        function resetDemo() {
+            gameState.isDemoPlaying = false;
+            gameState.demoStep = 0;
+            resetGame();
+            updateTeachingDisplay();
+            document.querySelectorAll('.step-dot').forEach(dot => {
+                dot.classList.remove('active', 'completed');
+            });
+        }
+
         // 处理落子
         function handleMove(x, y) {
-            if (gameState.board[y][x] !== null) return;
+            if (gameState.board[y][x] !== null || gameState.isDemoPlaying) return;
             
-            // 放置棋子
             gameState.board[y][x] = gameState.currentPlayer;
             
-            // 记录历史
             gameState.gameHistory.push({
                 x, y,
                 player: gameState.currentPlayer,
                 board: JSON.parse(JSON.stringify(gameState.board))
             });
             
-            // 更新最后落子标记
             gameState.lastMove = { x, y };
             
-            // 检查提子
             const captured = checkCapture(x, y);
             if (gameState.currentPlayer === 'black') {
                 gameState.capturedWhite += captured;
@@ -814,21 +1367,25 @@
                 gameState.capturedBlack += captured;
             }
             
-            // 更新手数和回合
             gameState.moveCount++;
             gameState.currentPlayer = gameState.currentPlayer === 'black' ? 'white' : 'black';
             
-            // 更新显示
             renderBoard();
             updateGameInfo();
             calculateWinRate();
             
-            // 更新教学进度
-            updateTeachingProgress();
-            
-            // AI提示
-            if (gameState.currentTeachingPoint <= 5) {
-                setTimeout(() => provideTeachingHint(), 500);
+            // 添加水墨效果
+            addInkEffect(x, y);
+        }
+
+        // 添加水墨效果
+        function addInkEffect(x, y) {
+            const intersection = document.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+            if (intersection) {
+                const ink = document.createElement('div');
+                ink.className = 'ink-spread';
+                intersection.appendChild(ink);
+                setTimeout(() => ink.remove(), 1000);
             }
         }
 
@@ -908,23 +1465,19 @@
                 const x = index % 19;
                 const y = Math.floor(index / 19);
                 
-                // 清除之前的棋子
                 const existingStone = intersection.querySelector('.stone');
                 if (existingStone) {
                     existingStone.remove();
                 }
                 
-                // 清除最后落子标记
                 intersection.classList.remove('last-move');
                 
-                // 放置新棋子
                 if (gameState.board[y][x]) {
                     const stone = document.createElement('div');
                     stone.className = `stone ${gameState.board[y][x]}`;
                     intersection.appendChild(stone);
                 }
                 
-                // 标记最后落子
                 if (gameState.lastMove && gameState.lastMove.x === x && gameState.lastMove.y === y) {
                     intersection.classList.add('last-move');
                 }
@@ -933,19 +1486,18 @@
 
         // 更新游戏信息
         function updateGameInfo() {
-            document.getElementById('moveCount').textContent = gameState.moveCount;
+            document.getElementById('moveCount').textContent = numToChinese(gameState.moveCount);
             document.getElementById('currentTurn').textContent = 
                 gameState.currentPlayer === 'black' ? '黑棋' : '白棋';
-            document.getElementById('capturedBlack').textContent = gameState.capturedBlack;
-            document.getElementById('capturedWhite').textContent = gameState.capturedWhite;
+            document.getElementById('capturedBlack').textContent = numToChinese(gameState.capturedBlack);
+            document.getElementById('capturedWhite').textContent = numToChinese(gameState.capturedWhite);
         }
 
         // 计算胜率
         function calculateWinRate() {
-            // 简化的胜率计算（基于领地、提子、棋子数）
             const { territoryBlack, territoryWhite } = calculateTerritory();
             const blackScore = territoryBlack + gameState.capturedWhite;
-            const whiteScore = territoryWhite + gameState.capturedBlack + 6.5; // 贴目
+            const whiteScore = territoryWhite + gameState.capturedBlack + 6.5;
             
             const total = blackScore + whiteScore;
             const blackRate = total > 0 ? (blackScore / total * 100) : 50;
@@ -956,11 +1508,10 @@
             
             document.getElementById('blackRate').textContent = gameState.winRate.black + '%';
             document.getElementById('whiteRate').textContent = gameState.winRate.white + '%';
-            document.getElementById('rateFill').style.background = 
-                `linear-gradient(90deg, #333 0%, #333 ${blackRate}%, #fff ${blackRate}%, #fff 100%)`;
+            document.getElementById('rateFill').style.setProperty('--black-rate', blackRate + '%');
             
-            document.getElementById('territoryBlack').textContent = territoryBlack;
-            document.getElementById('territoryWhite').textContent = territoryWhite;
+            document.getElementById('territoryBlack').textContent = numToChinese(territoryBlack);
+            document.getElementById('territoryWhite').textContent = numToChinese(territoryWhite);
         }
 
         // 计算领地
@@ -981,76 +1532,14 @@
             return { territoryBlack, territoryWhite };
         }
 
-        // 提供教学提示
-        function provideTeachingHint() {
-            const point = teachingPoints[gameState.currentTeachingPoint];
-            if (!point) return;
-            
-            document.getElementById('hintContent').textContent = point.content;
-            document.getElementById('hintSuggestion').textContent = point.suggestion;
-            
-            // 显示提示位置
-            if (point.hintPositions && point.hintPositions.length > 0) {
-                showHintPositions(point.hintPositions);
-            }
-        }
-
-        // 显示提示位置
-        function showHintPositions(positions) {
-            const intersections = document.querySelectorAll('.intersection');
-            intersections.forEach(intersection => {
-                intersection.querySelectorAll('.stone.hint').forEach(h => h.remove());
-            });
-            
-            positions.forEach(pos => {
-                const index = pos.y * 19 + pos.x;
-                const intersection = intersections[index];
-                if (intersection && !gameState.board[pos.y][pos.x]) {
-                    const hint = document.createElement('div');
-                    hint.className = 'stone hint';
-                    hint.style.background = 'rgba(233, 69, 96, 0.5)';
-                    hint.style.border = '2px solid #e94560';
-                    intersection.appendChild(hint);
-                }
-            });
-        }
-
-        // 更新教学进度
-        function updateTeachingProgress() {
-            const progress = (gameState.completedPoints.length / 100) * 100;
-            document.getElementById('progressFill').style.width = progress + '%';
-            document.getElementById('currentProgress').textContent = gameState.completedPoints.length;
-        }
-
-        // 加载教学点
-        function loadTeachingPoint(pointNumber) {
-            if (pointNumber > gameState.currentTeachingPoint + 1) {
-                alert('请先完成前面的教学点！');
-                return;
-            }
-            
-            gameState.currentTeachingPoint = pointNumber;
-            provideTeachingHint();
-            
-            // 更新UI
-            document.querySelectorAll('.teaching-point').forEach((el, index) => {
-                el.classList.remove('active');
-                if (index + 1 === pointNumber) {
-                    el.classList.add('active');
-                }
-            });
-        }
-
         // 请求提示
         function requestHint() {
-            provideTeachingHint();
-            
-            // 闪烁提示
+            updateTeachingDisplay();
             const hintBox = document.getElementById('hintBox');
-            hintBox.style.animation = 'pulse 0.5s 3';
+            hintBox.style.animation = 'sealStamp 0.5s ease-out';
             setTimeout(() => {
                 hintBox.style.animation = '';
-            }, 1500);
+            }, 500);
         }
 
         // 悔棋
@@ -1077,7 +1566,7 @@
         function passMove() {
             gameState.currentPlayer = gameState.currentPlayer === 'black' ? 'white' : 'black';
             updateGameInfo();
-            alert(`${gameState.currentPlayer === 'black' ? '白棋' : '黑棋'}停一手，轮到${gameState.currentPlayer === 'black' ? '黑棋' : '白棋'}下`);
+            showMessage(`${gameState.currentPlayer === 'black' ? '白棋' : '黑棋'}停手，轮到${gameState.currentPlayer === 'black' ? '黑棋' : '白棋'}下`);
         }
 
         // 计算胜负
@@ -1090,7 +1579,7 @@
             result += `白棋：${whiteScore.toFixed(1)}目\n\n`;
             result += blackScore > whiteScore ? '黑棋胜！' : '白棋胜！';
             
-            alert(result);
+            showMessage(result);
         }
 
         // 重新开始
@@ -1106,33 +1595,25 @@
             renderBoard();
             updateGameInfo();
             calculateWinRate();
-            provideTeachingHint();
-        }
-
-        // 显示教学弹窗
-        function showTeachingModal() {
-            document.getElementById('teachingModal').classList.add('active');
-        }
-
-        // 关闭教学弹窗
-        function closeTeachingModal() {
-            document.getElementById('teachingModal').classList.remove('active');
         }
 
         // 改变游戏模式
         function changeGameMode() {
             const mode = document.getElementById('gameMode').value;
             if (mode === 'teaching') {
-                provideTeachingHint();
+                updateTeachingDisplay();
             }
         }
 
-        // 初始化
-        window.onload = function() {
-            initBoard();
-            provideTeachingHint();
-            calculateWinRate();
-        };
+        // 显示消息
+        function showMessage(msg) {
+            alert(msg);
+        }
+
+        // 显示教学大纲弹窗
+        function showTeachingModal() {
+            alert('教学大纲功能开发中...\n\n当前包含5个教学点：\n1. 认识棋盘\n2. 气的概念\n3. 提子规则\n4. 打吃与吃子\n5. 连接与切断');
+        }
     </script>
 </body>
 </html>
